@@ -16,13 +16,19 @@ header h1{font-size:12px;font-weight:600;letter-spacing:1px}
 @keyframes p{50%{opacity:.55}}
 #view{flex:1;position:relative;overflow:hidden}
 canvas{display:block;width:100%!important;height:100%!important}
-.hud{position:absolute;top:6px;left:6px;right:6px;display:flex;flex-wrap:wrap;gap:4px;justify-content:space-between;pointer-events:none;z-index:5}
-.metric{background:rgba(0,0,0,.6);border:1px solid #2a2a2a;border-radius:8px;padding:4px 7px;min-width:54px;text-align:center}
+.hud{position:absolute;top:6px;left:6px;right:6px;display:grid;grid-template-columns:repeat(4,1fr);gap:4px;pointer-events:none;z-index:5}
+@media(min-width:700px){.hud{grid-template-columns:repeat(8,1fr)}}
+.metric{background:rgba(0,0,0,.6);border:1px solid #2a2a2a;border-radius:8px;padding:4px 4px;min-width:0;text-align:center}
+.metric .lbl{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.status.off{background:#1a1a1a;color:#999}
+.toast{position:absolute;left:50%;top:104px;transform:translateX(-50%);background:rgba(20,20,20,.92);border:1px solid #444;color:#eee;padding:6px 12px;border-radius:12px;font-size:11px;font-weight:600;z-index:6;opacity:0;transition:opacity .25s;pointer-events:none;max-width:90%;text-align:center}
+.toast.show{opacity:1}
+@media(min-width:700px){.toast{top:60px}}
 .metric .val{font-size:14px;font-weight:700}.metric .lbl{font-size:8px;color:#777;text-transform:uppercase}
 .metric.rpm .val{color:#4fc3f7}.metric.load .val{color:#ffb74d}.metric.temp .val{color:#ef5350}
-.metric.power .val{color:#81c784}.metric.boost .val{color:#ff80ab}.metric.gear .val{color:#ce93d8}
+.metric.power .val{color:#81c784}.metric.boost .val{color:#ff80ab}.metric.gearm .val{color:#ce93d8}
 .metric.cool .val{color:#4dd0e1}
-.warning{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);background:rgba(200,30,30,.9);color:#fff;padding:5px 14px;border-radius:16px;font-size:12px;font-weight:700;display:none;z-index:5}
+.warning{position:absolute;bottom:44px;white-space:nowrap;left:50%;transform:translateX(-50%);background:rgba(200,30,30,.9);color:#fff;padding:5px 14px;border-radius:16px;font-size:12px;font-weight:700;display:none;z-index:5}
 .controls{background:#0c0c0c;border-top:1px solid #1a1a1a;padding:7px 8px 12px;z-index:20}
 .row{display:flex;gap:5px;margin-bottom:6px;justify-content:center;align-items:center;flex-wrap:wrap}
 .gear,.shift,.tbtn,.pm{height:34px;border-radius:8px;border:2px solid #2a2a2a;background:#141414;color:#888;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0 8px}
@@ -41,8 +47,11 @@ canvas{display:block;width:100%!important;height:100%!important}
 input[type=range]{width:100%;-webkit-appearance:none;height:5px;border-radius:3px;background:#2a2a2a}
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;border:2px solid #fff;cursor:pointer}
 #gas::-webkit-slider-thumb{background:#ffb74d}#brake::-webkit-slider-thumb{background:#ef5350}
-.btn-row{display:flex;gap:5px}
-.btn{flex:1;height:32px;border-radius:7px;border:none;font-size:10px;font-weight:600;cursor:pointer}
+.btn-row{display:grid;grid-template-columns:repeat(5,1fr);gap:5px}
+.btn{height:32px;border-radius:7px;border:none;font-size:clamp(8.5px,2.5vw,10px);font-weight:600;cursor:pointer;padding:0 2px;white-space:nowrap;overflow:hidden}
+.btn-start{background:#2a0e0e;color:#ef9a9a;border:1px solid #5a2020}
+.btn-start.off{background:#1b5e20;color:#fff;border-color:#4caf50;animation:p 1s infinite}
+.btn-start.crank{background:#33691e;color:#fff;border-color:#8bc34a;animation:none}
 .btn-reset{background:#222;color:#bbb}
 .btn-load{background:#1f1500;color:#ffb74d;border:1px solid #4a3500}
 .btn-load.active{background:#ff9800;color:#111}
@@ -65,13 +74,15 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
   <div class="hud">
     <div class="metric rpm"><div class="val" id="rpmVal">800</div><div class="lbl">об/мин</div></div>
     <div class="metric load"><div class="val" id="loadVal">0%</div><div class="lbl">нагрузка</div></div>
-    <div class="metric temp"><div class="val" id="tempVal">85°</div><div class="lbl">темп</div></div>
+    <div class="metric temp"><div class="val" id="tempVal">88°</div><div class="lbl">темп</div></div>
     <div class="metric cool"><div class="val" id="coolVal">90%</div><div class="lbl">охлажд</div></div>
     <div class="metric power"><div class="val" id="pwrVal">0</div><div class="lbl">л.с.</div></div>
     <div class="metric boost"><div class="val" id="boostVal">0.0</div><div class="lbl">буст</div></div>
-    <div class="metric gear"><div class="val" id="gearVal">P</div><div class="lbl">передача</div></div>
+    <div class="metric gearm"><div class="val" id="gearVal">P</div><div class="lbl">передача</div></div>
+    <div class="metric wear"><div class="val" id="wearVal">0%</div><div class="lbl">износ</div></div>
   </div>
   <div class="warning" id="warn">ПЕРЕГРЕВ!</div>
+  <div class="toast" id="toast"></div>
   <div class="view-btns">
     <div class="view-btn active" data-view="trans">ПРОЗРАЧНЫЙ</div>
     <div class="view-btn" data-view="solid">СБОРКА</div>
@@ -116,9 +127,10 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
   </div>
   <div class="btn-row">
     <button class="btn btn-reset" id="resetBtn">СБРОС</button>
-    <button class="btn btn-load" id="loadBtn">+ НАГРУЗКА</button>
+    <button class="btn btn-load" id="loadBtn">НАГРУЗКА</button>
     <button class="btn btn-turbo" id="turboBtn">TWIN-TURBO</button>
     <button class="btn btn-repair" id="repairBtn">РЕМОНТ</button>
+    <button class="btn btn-start" id="startBtn">ЗАГЛУШИТЬ</button>
   </div>
 </div>
 
@@ -130,11 +142,17 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 const eng={
-  rpm:800,throttle:0,brake:0,gear:'P',manualGear:1,temp:85,power:0,wear:0,
+  rpm:800,throttle:0,brake:0,gear:'P',manualGear:1,temp:88,power:0,wear:0,
   maxRpm:7200,idle:800,angle:0,transparent:true,turbo:false,stalled:false,boost:0,
   type:'petrol',variant:'i4',coolEff:90,coolFlow:0,omega:83.8,idleI:0,torque:0,load:0,
-  turboOmega:0, thermoOpen:0
+  turboOmega:0, thermoOpen:.2,
+  fanOn:false,     // электровентилятор радиатора (гистерезис 97°/92°)
+  offReason:'',    // почему не работает: 'off' — заглушил сам, 'overheat' / 'wear' / 'nostart'
+  startT:0         // сек. на попытку запуска стартером
 };
+const AMBIENT=22;          // °C воздуха
+const HEAT_CAP=40;         // теплоёмкость I4 (мотор + ОЖ), кДж/°C; V6 — пропорционально числу цилиндров
+const START_MAX_TEMP=125,START_MAX_WEAR=90;
 const gearRatio={P:0,R:-.35,N:0,D:1,M:1};
 const manualRatios=[0,3.5,2.2,1.5,1.1,.85,.7];
 let extraLoad=false;
@@ -149,7 +167,7 @@ let cyls=[],blks=[],hds=[];   // cyls[i]={x,b,fire,phi,piston,rod,top}; top = Gr
 function makeQ(rpm,thr,boost,diesel,cut){
   const cr=diesel?17:10.5,rf=rpm/(diesel?4800:7200);
   const ve=.84+.14*Math.exp(-Math.pow((rpm-(diesel?2600:4300))/2600,2));
-  const map=diesel?1:.2+.8*Math.pow(thr,.85);
+  const map=diesel?1:.12+.88*Math.pow(thr,.85);   // .12: иначе прогретый мотор не держит 800 на ХХ
   return{pin:(map+boost)*ve,Pi:cut?1:diesel?1+3.7*thr:4.5,vc:1/(cr-1),vb:cr/(cr-1),n:diesel?1.35:1.32,
     ign:diesel?-6*D2R:-(12+18*rf)*D2R,dur:diesel?75*D2R:(48+10*rf)*D2R,cut:cut,pex:1.05+.12*rf*(1+boost*.5)};
 }
@@ -270,15 +288,41 @@ document.getElementById('gasMinus').onclick=()=>setGas(+gasEl.value-5);
 document.getElementById('brakePlus').onclick=()=>setBrake(+brakeEl.value+5);
 document.getElementById('brakeMinus').onclick=()=>setBrake(+brakeEl.value-5);
 
+let toastT;
+function toast(msg){
+  const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2200);
+}
+const inGear=()=>eng.gear!=='P'&&eng.gear!=='N';
+
 document.getElementById('resetBtn').onclick=()=>{
-  Object.assign(eng,{rpm:800,omega:83.8,angle:0,idleI:0,torque:0,load:0,temp:85,wear:0,throttle:0,brake:0,stalled:false,manualGear:1,turbo:false,boost:0,coolEff:90,turboOmega:0,thermoOpen:0});V.v=0;V.g=1;document.querySelector('.gear[data-gear=P]').click();
+  Object.assign(eng,{rpm:800,omega:83.8,angle:0,idleI:0,torque:0,load:0,temp:88,wear:0,throttle:0,brake:0,stalled:false,manualGear:1,turbo:false,boost:0,turboOmega:0,thermoOpen:.2,
+    fanOn:false,offReason:'',startT:0});V.v=0;V.g=1;document.querySelector('.gear[data-gear=P]').click();
   setGas(0);setBrake(0);
   document.getElementById('loadBtn').classList.remove('active');document.getElementById('turboBtn').classList.remove('active');
   extraLoad=false;document.getElementById('gearVal').textContent=eng.gear;
 };
-document.getElementById('loadBtn').onclick=function(){extraLoad=!extraLoad;this.classList.toggle('active',extraLoad);};
+document.getElementById('loadBtn').onclick=function(){
+  extraLoad=!extraLoad;this.classList.toggle('active',extraLoad);
+  if(extraLoad&&!inGear())toast('Нагрузка действует только на передаче (R / D / M)');
+};
 document.getElementById('turboBtn').onclick=function(){eng.turbo=!eng.turbo;this.classList.toggle('active',eng.turbo);};
-document.getElementById('repairBtn').onclick=()=>{eng.wear=Math.max(0,eng.wear-50);eng.temp=Math.max(70,eng.temp-40);eng.stalled=false;eng.coolEff=Math.min(100,eng.coolEff+20);};
+// Ремонт: сильно снижает износ и температуру, но мотор НЕ заводит
+document.getElementById('repairBtn').onclick=()=>{
+  eng.wear=Math.max(0,eng.wear-60);
+  if(eng.temp>90)eng.temp=Math.max(88,eng.temp-50);
+  toast(eng.stalled?'Отремонтирован. Теперь — ЗАВЕСТИ':'Ремонт: износ −60%, температура −50°');
+};
+// Завести / заглушить. Запуск — настоящий: снимаем отсечку, дальше стартер (Ts в физике) крутит до схватывания
+document.getElementById('startBtn').onclick=()=>{
+  if(eng.startT>0)return;
+  if(!eng.stalled){eng.stalled=true;eng.offReason='off';return;}
+  if(inGear())return toast('Для запуска включи P или N');
+  if(eng.wear>=START_MAX_WEAR)return toast('Износ '+Math.round(eng.wear)+'% — не заводится, нужен РЕМОНТ');
+  if(eng.temp>=START_MAX_TEMP)return toast('Мотор горячий ('+Math.round(eng.temp)+'°) — дай остыть до '+START_MAX_TEMP+'° или РЕМОНТ');
+  eng.stalled=false;eng.offReason='';eng.startT=3;eng.idleI=0;
+  document.getElementById('toast').classList.remove('show');
+};
 
 document.querySelectorAll('.view-btn').forEach(btn=>{
   btn.onclick=()=>{document.querySelectorAll('.view-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');eng.transparent=btn.dataset.view==='trans';updateMats();};
@@ -512,7 +556,9 @@ function updateMats(){
 
 rebuild();
 
-// Physics — fixed M1 heat bug
+const smooth=(a,b,x)=>{x=Math.max(0,Math.min(1,(x-a)/(b-a)));return x*x*(3-2*x);};
+function stall(reason){eng.stalled=true;eng.offReason=reason;eng.startT=0;}
+
 function update(dt){
   const dsl=eng.type==='diesel',nC=cyls.length,st=eng.stalled,gm=eng.gear;
   eng.maxRpm=dsl?4800:7200;eng.idle=dsl?620:800;
@@ -544,7 +590,7 @@ function update(dt){
   eng.boost += (Math.min(inertiaBoost, targetBoost*1.05 + (eng.turbo?0.05:0)) - eng.boost) * Math.min(1, dt*3.5);
   eng.boost = Math.max(0, Math.min(bmax, eng.boost));
   // integrate crank + vehicle in small angle steps (<=5 deg) so pressure pulses are resolved
-  const Q=makeQ(eng.rpm,thr,eng.boost,dsl,st||eng.rpm>eng.maxRpm+100);
+  const Q=makeQ(eng.rpm,thr,eng.boost,dsl,st||eng.startT>2.4||eng.rpm>eng.maxRpm+100);   // первые 0.6 с запуска — стартер крутит без топлива
   const fm=(.9+.0002*eng.rpm)*(dsl?1.25:1)*(eng.temp<85?1+(85-eng.temp)*.01:1);   // FMEP, bar
   const Tf=fm*1e5*nC*P.A*2*P.r/(4*Math.PI);
   const ns=Math.max(1,Math.min(240,Math.ceil(eng.omega*dt/.09))),h=dt/ns;
@@ -577,29 +623,45 @@ function update(dt){
   if(!isFinite(eng.power))eng.power=0;
   const load=eng.load;
 
-  // Cooling system + thermostat
-  eng.coolFlow=Math.min(1,eng.rpm/3000);
-  // thermostat: closed below ~82°, fully open by ~98°
-  const tOpen = Math.max(0, Math.min(1, (eng.temp-82)/16));
-  eng.thermoOpen += (tOpen - eng.thermoOpen)*Math.min(1,dt*1.5);
-  const fanBonus=eng.temp>95?0.45:0;
-  eng.coolEff=Math.min(100, 38 + eng.coolFlow*28 + eng.thermoOpen*32 + fanBonus*18 - eng.wear*0.18);
-  let heat=st?0:(eng.rpm/900)*.7+load*.14+thr*2.0;
-  if(eng.turbo)heat*=1.3+eng.boost*.25;
-  if(dsl)heat*=1.06;
-  const cooling=(eng.coolEff/100)*2.9 + (eng.temp>100?0.55:0);
-  eng.temp+=(heat-cooling)*dt;
-  if(!isFinite(eng.temp))eng.temp=85;
-  eng.temp=Math.max(62,Math.min(155,eng.temp));
-  if(!isFinite(eng.coolEff))eng.coolEff=90;
+  // ===== Нагрев и охлаждение =====
+  // Тепло в ОЖ ≈ индикаторная мощность (полезная + трение). Без нагрузки это только трение — термостат его держит.
+  // Отвод ∝ (T − воздух) × производительность × открытие термостата — у системы есть равновесие.
+  const sz=nC/4;                                                   // V6 — больше мотор, радиатор и масса
+  const pInd=st?0:Math.max(0,eng.torque+Tf)*eng.omega/1000;         // кВт
+  const qIn=st?0:2*sz+.85*pInd;
+  eng.coolFlow=.25+.75*Math.min(1,eng.rpm/(eng.maxRpm*.5));         // помпа от коленвала; стоит — термосифон
+  if(eng.temp>97)eng.fanOn=true;else if(eng.temp<92)eng.fanOn=false;
+  const ram=Math.min(.6,Math.abs(V.v)/25);                          // набегающий поток от скорости
+  const air=Math.min(1,.4+.3*Math.min(1,eng.rpm/(eng.maxRpm*.55))+(eng.fanOn?.45:0)+ram);
+  const capC=eng.coolFlow*air*(1-eng.wear/250);                     // износ забивает систему
+  eng.coolEff=capC*100;
+  eng.thermoOpen+=(Math.max(.04,smooth(84,98,eng.temp))-eng.thermoOpen)*Math.min(1,dt*1.5);   // термостат 84°→98°
+  const qOut=1.25*sz*capC*eng.thermoOpen*(eng.temp-AMBIENT)+.02*sz*(eng.temp-AMBIENT);
+  eng.temp+=(qIn-qOut)/(HEAT_CAP*sz)*dt;
+  if(!isFinite(eng.temp))eng.temp=88;
+  eng.temp=Math.max(AMBIENT,Math.min(155,eng.temp));
 
-  if(eng.temp>120||eng.rpm>eng.maxRpm*.94)eng.wear+=dt*2.0;
-  if(load>75&&eng.throttle>.8)eng.wear+=dt*1.6;
-  if(eng.turbo&&eng.temp>110)eng.wear+=dt*1.4;
-  if(eng.temp>145||eng.wear>97)eng.stalled=true;
+  // ===== Износ =====
+  if(!st){
+    if(eng.rpm>eng.maxRpm*.97)eng.wear+=dt*.03;                     // долбит отсечку
+    if(load>75&&eng.throttle>.8&&eng.temp>108)eng.wear+=dt*.1;      // тяжёлая нагрузка в пол на горячем моторе
+    if(eng.turbo&&eng.temp>110)eng.wear+=dt*.3;
+  }
+  if(eng.temp>115)eng.wear+=dt*(eng.temp-115)*.05;                  // перегрев — главный убийца
+  eng.wear=Math.min(100,eng.wear);
+  if(!st){
+    if(eng.temp>=145)stall('overheat');
+    else if(eng.wear>=100)stall('wear');
+  }
+  // попытка запуска: схватил — ок, нет за 3 с — не завёлся
+  if(eng.startT>0){
+    eng.startT-=dt;
+    if(eng.rpm>eng.idle*.8)eng.startT=0;
+    else if(eng.startT<=0){eng.startT=0;stall('nostart');toast('Не завёлся');}
+  }
 
   turbos.forEach((t,i)=>{if(t.userData.blades)t.userData.blades.rotation.x += (eng.turboOmega*0.018 + eng.boost*0.25)*(i?1:-1)*dt*60;});
-  if(radFan)radFan.rotation.x += (eng.coolFlow*0.4 + (eng.temp>95?0.35:0.05) + eng.thermoOpen*0.15);
+  if(radFan)radFan.rotation.x += ((st?0:eng.coolFlow*.4)+(eng.fanOn?.35:st?0:.05))*dt*60;
 
   ui();sound();
   const hf=Math.max(0,(eng.temp-95)/55);
@@ -618,12 +680,27 @@ function ui(){
   document.getElementById('pwrVal').textContent=Math.round(s(eng.power));
   if(eng.gear==='D')document.getElementById('gearVal').textContent='D'+V.g;
   document.getElementById('boostVal').textContent=s(eng.boost).toFixed(1);
+  const wv=document.getElementById('wearVal');wv.textContent=Math.floor(s(eng.wear))+'%';
+  wv.style.color=eng.wear<40?'#aed581':eng.wear<75?'#ffb74d':'#ef5350';
+
+  const crank=eng.startT>0;
+  const sb=document.getElementById('startBtn'),sbS=crank?'crank':eng.stalled?'off':'on';
+  if(sb.dataset.s!==sbS){
+    sb.dataset.s=sbS;
+    sb.textContent=sbS==='crank'?'СТАРТЕР…':sbS==='off'?'ЗАВЕСТИ':'ЗАГЛУШИТЬ';
+    sb.className='btn btn-start'+(sbS==='on'?'':' '+sbS);
+  }
+
   const st=document.getElementById('status'),w=document.getElementById('warn');
-  const temp=s(eng.temp,85), rpm=s(eng.rpm,800);
-  if(eng.stalled){st.textContent='ЗАГЛОХ';st.className='status danger';w.style.display='block';w.textContent='ДВИГАТЕЛЬ ЗАГЛОХ!';}
-  else if(temp>130||eng.wear>90){st.textContent='АВАРИЯ';st.className='status danger';w.style.display='block';w.textContent=temp>130?'ПЕРЕГРЕВ!':'КРИТИЧЕСКИЙ ИЗНОС!';}
-  else if(temp>115||rpm>eng.maxRpm*.9){st.textContent='НАГРУЗКА';st.className='status warn';w.style.display='none';}
-  else{st.textContent='ГОТОВ';st.className='status ok';w.style.display='none';}
+  const temp=s(eng.temp,88), rpm=s(eng.rpm,800);
+  const set=(txt,cls,warn)=>{st.textContent=txt;st.className='status '+cls;w.style.display=warn?'block':'none';if(warn)w.textContent=warn;};
+  const why={overheat:'ЗАГЛОХ: ПЕРЕГРЕВ',wear:'ЗАГЛОХ: ИЗНОС',nostart:'НЕ ЗАВЁЛСЯ'};
+  if(crank)set('СТАРТЕР','warn');
+  else if(eng.stalled&&eng.offReason==='off')set('ВЫКЛ','off');
+  else if(eng.stalled)set('ЗАГЛОХ','danger',why[eng.offReason]||'ДВИГАТЕЛЬ ЗАГЛОХ!');
+  else if(temp>130||eng.wear>85)set('АВАРИЯ','danger',temp>130?'ПЕРЕГРЕВ!':'КРИТИЧЕСКИЙ ИЗНОС!');
+  else if(temp>115||rpm>eng.maxRpm*.9)set('НАГРУЗКА','warn');
+  else set('ГОТОВ','ok');
 }
 function sound(){updateSound();}
 
