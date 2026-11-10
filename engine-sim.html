@@ -5,10 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
 <meta name="theme-color" content="#050505">
 <title>Engine Load Sim 3D Pro</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:#050505;color:#e0e0e0;font-family:system-ui,sans-serif;height:100dvh;overflow:hidden;display:flex;flex-direction:column;user-select:none;touch-action:none}
-header{padding:6px 12px;display:flex;justify-content:space-between;align-items:center;background:#0c0c0c;border-bottom:1px solid #1a1a1a;z-index:20}
+header{padding:calc(6px + var(--tg-safe-area-inset-top,0px) + var(--tg-content-safe-area-inset-top,0px)) 12px 6px;display:flex;justify-content:space-between;align-items:center;background:#0c0c0c;border-bottom:1px solid #1a1a1a;z-index:20}
 header h1{font-size:12px;font-weight:600;letter-spacing:1px}
 .status{font-size:10px;padding:2px 8px;border-radius:10px;font-weight:600}
 .status.ok{background:#0a2a0a;color:#4caf50}.status.warn{background:#2a1a00;color:#ff9800}
@@ -29,7 +30,7 @@ canvas{display:block;width:100%!important;height:100%!important}
 .metric.power .val{color:#81c784}.metric.boost .val{color:#ff80ab}.metric.gearm .val{color:#ce93d8}
 .metric.cool .val{color:#4dd0e1}
 .warning{position:absolute;bottom:44px;white-space:nowrap;left:50%;transform:translateX(-50%);background:rgba(200,30,30,.9);color:#fff;padding:5px 14px;border-radius:16px;font-size:12px;font-weight:700;display:none;z-index:5}
-.controls{background:#0c0c0c;border-top:1px solid #1a1a1a;padding:7px 8px 12px;z-index:20}
+.controls{background:#0c0c0c;border-top:1px solid #1a1a1a;padding:7px 8px calc(12px + var(--tg-safe-area-inset-bottom,0px));z-index:20}
 .row{display:flex;gap:5px;margin-bottom:6px;justify-content:center;align-items:center;flex-wrap:wrap}
 .gear,.shift,.tbtn,.pm{height:34px;border-radius:8px;border:2px solid #2a2a2a;background:#141414;color:#888;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0 8px}
 .gear{width:34px}.shift,.pm{width:34px;border-color:#444;color:#ddd}
@@ -739,6 +740,18 @@ function animate(){
   if(crankG)crankG.rotation.x=th;
 }
 
+// ===== Telegram Mini App: на весь экран, свайп не сворачивает игру =====
+// Вне Telegram platform === 'unknown' (или скрипт не загрузился) — тогда ничего не делаем.
+const tg=window.Telegram&&window.Telegram.WebApp;
+if(tg&&tg.platform&&tg.platform!=='unknown'){
+  const at=v=>tg.isVersionAtLeast(v),safe=f=>{try{f();}catch(e){}};
+  tg.ready();tg.expand();
+  if(at('7.7'))safe(()=>tg.disableVerticalSwipes());     // вращение мотора пальцем больше не тянет окно вниз
+  if(at('8.0'))safe(()=>tg.requestFullscreen());         // без шапки Telegram, под статус-бар
+  safe(()=>{tg.setHeaderColor('#050505');tg.setBackgroundColor('#050505');});
+  if(at('7.10'))safe(()=>tg.setBottomBarColor('#0c0c0c'));
+}
+
 let last=performance.now();
 function loop(now){
   const dt=Math.min(.05,(now-last)/1000);last=now;
@@ -746,7 +759,9 @@ function loop(now){
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
-window.addEventListener('resize',()=>{const w=view.clientWidth,h=view.clientHeight;camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setSize(w,h);});
+function fit(){const w=view.clientWidth,h=view.clientHeight;if(!w||!h)return;camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setSize(w,h);}
+window.addEventListener('resize',fit);
+if(window.ResizeObserver)new ResizeObserver(fit).observe(view);   // вид меняется и без resize окна (полноэкранный режим, отступы Telegram)
 </script>
 </body>
 </html>
