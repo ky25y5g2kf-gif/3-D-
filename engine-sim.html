@@ -476,7 +476,7 @@ function rebuild(){
     // Spark plug (petrol) / glow plug (diesel) – same visual for now
     const sp=new THREE.Group();
     const body=new THREE.Mesh(new THREE.CylinderGeometry(.025,.028,.12,8),M.spark);
-    const tip=new THREE.Mesh(new THREE.CylinderGeometry(.008,.012,.04,6),M.sparkTip);
+    const tip=new THREE.Mesh(new THREE.CylinderGeometry(.008,.012,.04,6),M.sparkTip.clone());   // свой материал: иначе все свечи вспыхивают разом
     tip.position.y=-.08; body.position.y=.02; sp.add(body);sp.add(tip);
     sp.position.set(0,.08,0); cy.top.add(sp); cy.spark=sp;
     cyls.push(cy);
